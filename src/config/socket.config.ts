@@ -6,5 +6,5 @@ export const socketConfig: GatewayMetadata = {
     origin: process.env.SOCKET_ORIGIN || '*',
     credentials: true,
   },
-  transports: ['websocket'], // or ['websocket', 'polling'] if fallback needed
+  transports: ['websocket','polling'], // or ['websocket', 'polling'] if fallback needed
 };
