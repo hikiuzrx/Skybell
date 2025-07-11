@@ -12,15 +12,14 @@ import type {  OnGatewayConnection,
 import { socketConfig } from "../../config/socket.config";
 import { LoggerService } from "../logger/logger.service";
 import type { ClientService } from "../../modules/client/client.service";
+import { RedisService } from "../redis/redis.service";
 @WebSocketGateway(socketConfig)
 export class NotificationGateway implements OnGatewayConnection,OnGatewayDisconnect {
-    constructor(private readonly logger:LoggerService , private readonly clientService:ClientService){}
+    constructor(private readonly logger:LoggerService , 
+      private readonly clientService:ClientService,
+      private readonly redisService:RedisService){}
     @WebSocketServer()
     server!: Server;
-    handleDisconnect(client: any) { 
-
-        throw new Error("Method not implemented.");
-    }
     async handleConnection(socket:Socket) {
       const { clientId,token } = socket.handshake.auth
       if(!token){
@@ -33,10 +32,16 @@ export class NotificationGateway implements OnGatewayConnection,OnGatewayDisconn
         }
         const cookies = cookie.parse(cookieHeader);
         await this.clientService.validateToken(cookies,clientId)
-        //store in redis the connection 
-      
+       }
+      await this.clientService.validateToken(clientId,token) //store in redis the connection 
+      await this.redisService.registerConnectedClient(clientId,socket.id);
+      this.logger.log(`Client ${clientId} connected with socket ID ${socket.id}`);
       }
-    }
+  async handleDisconnect(socket:Socket) {
+    const { clientId } = socket.handshake.auth;
+    await this.redisService.DisconnectClient(clientId,socket.id);
+    this.logger.log(`Client ${clientId} disconnected from socket ID ${socket.id}`);
+  }
 
 }
 
