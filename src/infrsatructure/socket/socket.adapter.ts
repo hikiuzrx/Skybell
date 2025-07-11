@@ -20,6 +20,9 @@ export class AuthenticatedSocketAdapter extends IoAdapter {
 
     }
     create(port:number,options:ServerOptions):Server{
+        options.cors ={
+            credentials:true,
+        }
         const server =super.create(port,options);
         server.use(async(socket:Socket,next)=>{
           try{
