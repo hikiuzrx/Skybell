@@ -18,6 +18,9 @@ export class ClientService {
     async getClients(){
         return this.Client.find() || [] 
     }
+    async getActiveClients():Promise<IClient[]>{
+        return this.Client.find({isActive:true}) || [] 
+    }
     async validateToken(cookies: Record<string, string|undefined>, clientId: string, token?: string): Promise<any> {
     try {
         let t:string |undefined;

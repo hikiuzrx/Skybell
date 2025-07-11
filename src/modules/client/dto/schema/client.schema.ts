@@ -6,6 +6,7 @@ export class Client{
 
     @Prop({ required: true })
     clientSecret!: string;
+    
     @Prop({required:true})
     clientUrl!: string;
     @Prop({ default: true })
