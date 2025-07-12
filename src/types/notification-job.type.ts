@@ -4,6 +4,8 @@ export interface INotificationJob {
   payload: {
     title: string;
     body: string;
+    actionUrl?:string;
+    imageUrl?:string;
     data?: Record<string, any>;
-  };// Optional field for error messages
+  };
 }

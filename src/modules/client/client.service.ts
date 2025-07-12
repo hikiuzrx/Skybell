@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
-import type  IClient  from "./client.interface";
+import type  IClient  from "../../types/client.type";
 import { RegisterClientDto } from "./dto/client.dto";
 import * as jwt from "jsonwebtoken"
 @Injectable()
