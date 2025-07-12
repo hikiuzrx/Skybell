@@ -4,11 +4,13 @@ import type { ClientService } from "../../modules/client/client.service";
 import type { Server,ServerOptions,Socket } from "socket.io";
 import type { LoggerService } from "../logger/logger.service";
 import * as cookie from "cookie";
+import { RedisService } from "../redis/redis.service";
 
 @Injectable()
 export class AuthenticatedSocketAdapter extends IoAdapter {
     private allowedOrigins:string[] = [];
     constructor(
+        private readonly redisService:RedisService,
         private readonly clientService:ClientService,
         private readonly logger:LoggerService,
     ){
@@ -24,8 +26,11 @@ export class AuthenticatedSocketAdapter extends IoAdapter {
             credentials:true,
         }
         options.transports = ['websocket', 'polling'];
+         const namespaceRegex = /^\/client-[a-f0-9]{24}$/;
+
         const server =super.create(port,options);
-        server.use(async(socket:Socket,next)=>{
+         server.of(namespaceRegex)
+         .use(async(socket:Socket,next)=>{
           try{
              const {clientId,token} = socket.handshake.auth;
             if (!token) {
@@ -46,7 +51,24 @@ export class AuthenticatedSocketAdapter extends IoAdapter {
             this.logger.error(`Authentication error: ${e.message}`);
             next(new UnauthorizedException(`Authentication error: ${e.message}`));
           }
-        })
+        }).on('connection', async (socket: Socket) => {
+        const clientId = socket.data.clientId;
+        const socketId = socket.id;
+
+        await this.redisService.registerConnectedClient(clientId, socketId);
+        this.logger.log(`Client ${clientId} connected to namespace ${socket.nsp.name} with socket ID ${socketId}`);
+
+        socket.on('disconnect', async () => {
+          await this.redisService.DisconnectClient(clientId, socketId);
+          this.logger.log(`Client ${clientId} disconnected`);
+        });
+
+        // handle custom events
+        socket.on('message', (payload) => {
+          this.logger.log(`Message from ${clientId}: ${payload}`);
+          socket.emit('response', { ack: true });
+        });
+      });
         return server;
     }
 }
