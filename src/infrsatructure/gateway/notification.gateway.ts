@@ -9,11 +9,10 @@ import {
 import * as cookie from "cookie";
 import type {  OnGatewayConnection,
   OnGatewayDisconnect} from '@nestjs/websockets'
-import { socketConfig } from "../../config/socket.config";
 import { LoggerService } from "../logger/logger.service";
 import type { ClientService } from "../../modules/client/client.service";
 import { RedisService } from "../redis/redis.service";
-@WebSocketGateway(socketConfig)
+@WebSocketGateway()
 export class NotificationGateway implements OnGatewayConnection,OnGatewayDisconnect {
     constructor(private readonly logger:LoggerService , 
       private readonly clientService:ClientService,
@@ -21,19 +20,7 @@ export class NotificationGateway implements OnGatewayConnection,OnGatewayDisconn
     @WebSocketServer()
     server!: Server;
     async handleConnection(socket:Socket) {
-      const { clientId,token } = socket.handshake.auth
-      if(!token){
-        const cookieHeader = socket.handshake.headers.cookie;
-        if (!cookieHeader) {
-          socket.emit('error', { message: 'No authentication proof provided.' });
-          this.logger.log("no auth proof provided");
-          socket.disconnect();
-          return;
-        }
-        const cookies = cookie.parse(cookieHeader);
-        await this.clientService.validateToken(cookies,clientId)
-       }
-      await this.clientService.validateToken(clientId,token) //store in redis the connection 
+      const { clientId} = socket.data;
       await this.redisService.registerConnectedClient(clientId,socket.id);
       this.logger.log(`Client ${clientId} connected with socket ID ${socket.id}`);
       }

@@ -23,6 +23,7 @@ export class AuthenticatedSocketAdapter extends IoAdapter {
         options.cors ={
             credentials:true,
         }
+        options.transports = ['websocket', 'polling'];
         const server =super.create(port,options);
         server.use(async(socket:Socket,next)=>{
           try{
