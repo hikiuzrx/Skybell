@@ -7,4 +7,6 @@ export const constants = {
     REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined,
     PORT: process.env.PORT || 3000,
     WORKER_CONCURRENCY: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
+    SOCKET_IO_URL: process.env.SOCKET_IO_URL || 'http://localhost:3000',
+    ADMIN_ID: process.env.ADMIN_ID || 'admin', // Default admin ID
 }

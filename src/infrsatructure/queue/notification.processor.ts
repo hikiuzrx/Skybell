@@ -1,23 +1,32 @@
 // src/processor/notification.processor.ts
 import { Inject, Injectable } from '@nestjs/common';
 import type {OnModuleInit} from '@nestjs/common'
-import { Worker, Job } from 'bullmq';
+import { Job, Worker } from 'bullmq';
+import type  { INotificationJob } from '../../types/notification-job.type';
 import { workerOptions } from '../../config/bullMq.config';
 import { LoggerService } from '../logger/logger.service';
-
+import io from 'socket.io-client';
+import { socketConfig } from '../../config/socket.config';
 @Injectable()
 export class NotificationProcessor implements OnModuleInit {
  constructor(private readonly logger: LoggerService) {}
   onModuleInit() :void{
     this.logger.queue('Initializing notification worker...');
+    const socket = io(socketConfig.url, {
+      transports: socketConfig.transport,
+      auth: socketConfig.auth,
+    })
+    this.logger.queue(`Socket connected to ${socketConfig.url} with transports: ${socketConfig.transport.join(', ')}`);
     
     const worker = new Worker(
       'notification_queue',
-      async (job: Job) => {
+      async (job:Job<INotificationJob>) => {
         this.logger.queue('Processing job: ' + JSON.stringify(job.data));
+        
       },
       workerOptions,
     );
+    
 
     // Add event listeners before any potential async operations
     worker.on('ready', () => {
@@ -65,4 +74,11 @@ export class NotificationProcessor implements OnModuleInit {
       }
     }, 1000);
   }
+  async handleJob(job: Job<INotificationJob>) {
+    this.logger.queue(`Handling job: ${JSON.stringify(job)}`);
+
+  }
+  async isOnline():Promise<boolean>{return true}
+  async sendRealTime(){}
+  async sendPush(){}
 }
