@@ -1,5 +1,5 @@
 export interface INotificationJob {
-   userId: string;
+  users:string[];
   clientId: string;
   payload: {
     title: string;

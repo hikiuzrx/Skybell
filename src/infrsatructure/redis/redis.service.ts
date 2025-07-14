@@ -20,37 +20,25 @@ export class RedisService implements OnModuleInit,OnModuleDestroy {
     getClient(): IORedis {
         return this.redisClient;
     }
-
-  async pushToList(key: string, value: string) {
-    return this.redisClient.rpush(key, value); // Push to right (tail)
-  }
-
-  async popFromList(key: string): Promise<string | null> {
-    return this.redisClient.lpop(key); // Pop from left (head)
-  }
-
-  async getList(key: string): Promise<string[]> {
-    return this.redisClient.lrange(key, 0, -1); // Get all elements
-  }
-
-  async getListLength(key: string): Promise<number> {
-    return this.redisClient.llen(key);
-  }
-
-  async clearList(key: string) {
-    return this.redisClient.del(key);
-  }
-
   onModuleDestroy() {
     this.redisClient.quit();
   }
-  async registerConnectedClient(clientId: string, socketId:string) {
-    return this.redisClient.hset(clientId,socketId,new Date().toISOString())
+  async registerConnectedClient(clientId: string,userId:string, socketId:string) {
+    return this.redisClient.hset(`${clientId}:${userId}`,socketId,Date.now().toString());
   }
-  async getConnectedClients(clientId: string): Promise<string[]> {
-    return this.redisClient.hkeys(clientId);
+  async getConnectedClient(clientId: string, userId:string): Promise<string | null> {
+    return this.redisClient.hget(clientId, userId);
   }
-  async DisconnectClient(clientId: string, socketId:string) {
-    return this.redisClient.hdel(clientId,socketId);
+  async getConnectedClients(clientId: string,userId:string): Promise<string[]> {
+    return this.redisClient.hkeys(`${clientId}:${userId}`);
+  }
+  async DisconnectClient(clientId: string, userId:string) {
+    return this.redisClient.hdel(clientId, userId);
+  }
+  async storeFCMToken(clientId: string, userId: string, fcmToken: string) {
+    return this.redisClient.hsetnx(`${clientId}:${userId}`, fcmToken, Date.now().toString());
+  }
+  async getFCMToken(clientId: string, userId: string): Promise<string[] | null> {
+    return this.redisClient.hkeys(`${clientId}:${userId}`);
   }
 }
