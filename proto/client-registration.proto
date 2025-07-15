@@ -1,0 +1,35 @@
+syntax= "proto3";
+package client_registration;
+
+service ClientRegistrationService {
+    rpc RegisterClient(RegisterClientRequest) returns (RegisterClientResponse);
+}
+
+service NotificationService {
+    rpc RegisterFCMToken(RegisterFCMTokenRequest) returns (RegisterFCMTokenResponse);
+}
+
+message RegisterClientRequest {
+    string appName = 1;
+    string clientSecret = 2;
+    string clientUrl = 3;
+    optional string cookieName = 4;
+    optional string description = 5;
+}
+
+message RegisterClientResponse {
+    string id = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message RegisterFCMTokenRequest {
+    string userId = 1;
+    string clientId = 2;
+    string fcmToken = 3;
+}
+
+message RegisterFCMTokenResponse {
+    bool success = 1;
+    string message = 2;
+}

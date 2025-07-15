@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { OnModuleInit } from '@nestjs/common';
 import { Job, Worker } from 'bullmq';
 import type { INotificationJob } from '../../types/notification-job.type';
@@ -6,11 +6,9 @@ import { workerOptions } from '../../config/bullMq.config';
 import { LoggerService } from '../logger/logger.service';
 import io from 'socket.io-client';
 import { socketConfig } from '../../config/socket.config';
-import type { RedisService } from '../redis/redis.service';
-import type { ClientService } from '../../modules/client/client.service';
-import { errorFileTransport } from '../logger/transport';
-import { SocketTimeoutError } from 'redis';
-import type { PushService } from '../push/push.service';
+import  { RedisService } from '../redis/redis.service';
+import  { ClientService } from '../../modules/client/client.service';
+import  { PushService } from '../push/push.service';
 
 @Injectable()
 export class NotificationProcessor implements OnModuleInit {
