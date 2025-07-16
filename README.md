@@ -24,9 +24,10 @@ A plug-and-play, scalable microservice for real-time notifications using NestJS,
 - **Dynamic Client Namespaces**: Secure separation between different applications
 - **JWT-based Authentication**: Secure your notification channels with minimal effort
 - **Multiple APIs**:
-  - REST API for standard HTTP integration
-  - gRPC services for high-performance systems
-  - Socket.IO for real-time bidirectional communication
+  - REST API for adding notification jobs to the queue
+  - gRPC services for high-performance client registration
+  - Socket.IO for real-time notification delivery
+- **Centralized Processing**: All notification delivery handled by BullMQ workers
 - **Scalable Infrastructure**:
   - Redis for distributed connection management and pub/sub
   - MongoDB for persistent storage of clients and settings
@@ -77,11 +78,24 @@ notification-service/
 The service follows a modular architecture based on NestJS:
 
 - **Socket Adapter**: Manages CORS and WebSocket server creation
-- **Socket Gateway**: Handles authentication and event routing
+- **Socket Gateway**: Handles WebSocket authentication and event routing
 - **Client Module**: Manages client registration and validation
 - **Redis Service**: Handles connection tracking and pub/sub
 - **Push Service**: Manages FCM push notifications
+- **BullMQ Worker**: Processes notification jobs and handles all notification delivery
 - **Logger Service**: Provides structured logging
+
+### Notification Workflow
+
+The core notification workflow is:
+
+1. Client applications add notification jobs to the BullMQ queue
+2. The BullMQ worker processes these jobs
+3. The worker checks which users are online (connected via WebSocket)
+4. For online users, notifications are delivered via Socket.IO in real-time
+5. For offline users with registered FCM tokens, push notifications are sent via Firebase
+
+This centralized approach ensures consistent delivery logic and proper handling of different notification channels.
 
 ## Installation
 
@@ -300,38 +314,14 @@ client.registerFCMToken(request, (err, response) => {
 
 ### Step 5: Send Notifications
 
-You can send notifications using multiple methods:
+All notifications in SkyBell are processed through BullMQ jobs. This centralized approach ensures reliable delivery, proper queueing, and consistent handling of both WebSocket and push notifications.
 
-#### Option A: Via WebSocket Event (Real-time)
-
-```javascript
-// Send a notification to specific users or sockets
-socket.emit('notification-job', {
-  payload: {
-    title: 'New Message',
-    body: 'You have received a new message',
-    actionUrl: 'https://your-app.com/messages',
-    imageUrl: 'https://your-app.com/notification-image.jpg',
-    data: {
-      messageId: '12345',
-      senderId: 'user-456'
-    }
-  },
-  // Optional: List of specific socket IDs to target
-  sockets: ['target-socket-id-1', 'target-socket-id-2'],
-  // Optional: List of user IDs to target
-  users: ['user-789', 'user-101']
-});
-```
-
-#### Option B: Via BullMQ (Background Processing)
-
-For high-volume or scheduled notifications, use the BullMQ queue:
+To send notifications, you should use the BullMQ queue:
 
 ```javascript
 const { Queue } = require('bullmq');
 
-const notificationQueue = new Queue('notifications', {
+const notificationQueue = new Queue('notification_queue', {
   connection: {
     host: 'localhost',
     port: 6379
@@ -340,7 +330,7 @@ const notificationQueue = new Queue('notifications', {
 
 // Add a notification job to the queue
 await notificationQueue.add('notification-job', {
-  clientId: '6876dab283777a5d40cdc088',
+  clientId: '6876dab283777a5d40cdc088',  // Your client ID
   payload: {
     title: 'Daily Summary',
     body: 'Here is your daily activity summary',
@@ -355,7 +345,16 @@ await notificationQueue.add('notification-job', {
 });
 ```
 
-#### Option C: Via REST API
+The notification service's BullMQ worker will automatically:
+
+1. Process the job
+2. Determine if users are online (connected via WebSocket) or offline
+3. Send real-time notifications via Socket.IO to online users
+4. Send push notifications via Firebase Cloud Messaging (FCM) to offline users with registered tokens
+
+> **Important**: Do not attempt to send push notifications directly via REST API or Socket.IO. The BullMQ worker is the only component that should process notification delivery to ensure proper handling of WebSocket and FCM notifications.
+
+You can also use the REST API to add jobs to the notification queue (which will be processed by BullMQ):
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/notifications \
@@ -376,15 +375,21 @@ curl -X POST http://localhost:3000/api/v1/notifications \
   }'
 ```
 
-### Step 6: Process Notification Delivery
+### Step 6: Notification Delivery Workflow
 
-When a notification is sent, the service follows this workflow:
+When a notification job is received, the BullMQ worker follows this workflow:
 
-1. **Validation**: Verify the client ID and user permissions
-2. **User Resolution**: Look up the online status of targeted users
-3. **WebSocket Delivery**: For online users, send the notification via WebSocket
-4. **Push Notification**: For offline users with registered FCM tokens, send push notifications
-5. **Storage**: Store notifications for retrieval when users reconnect (configurable)
+1. **Validation**: Verify the client ID and user IDs are valid
+
+2. **User Resolution**: Check which users are online (connected via WebSocket) and which are offline
+
+3. **WebSocket Delivery**: For online users, deliver the notification in real-time via Socket.IO
+
+4. **Push Notification**: For offline users with registered FCM tokens, send push notifications via Firebase Cloud Messaging
+
+5. **Logging**: Log the delivery status and any errors for monitoring
+
+This centralized processing ensures consistent delivery across all channels and proper handling of both real-time and asynchronous notifications.
 
 ## API Documentation
 
@@ -405,10 +410,11 @@ The service provides the following gRPC endpoints:
 
 ### WebSocket Events
 
-- `notification` - Sent to clients when a notification is available
-- `notification-job` - Received from clients to trigger notifications to other clients
-- `ping` - Received from clients to check connection
+- `notification` - Sent to clients when a notification is available (client receives this event)
+- `ping` - Sent from clients to check connection
 - `pong` - Sent to clients in response to ping
+
+> **Important**: The `notification-job` event is for internal use by the BullMQ worker only. Client applications should not attempt to emit this event directly. Instead, use the BullMQ queue or REST API to queue notification jobs.
 
 ## WebSocket Connection
 
@@ -450,14 +456,16 @@ For new developers looking to integrate with SkyBell, here's the complete step-b
    - Handle connection events and notification reception
 
 4. **Send Notifications**
-   - For real-time communication: Use direct WebSocket events
-   - For background processing: Use the REST API or BullMQ queue
-   - Specify target users or socket IDs to receive the notification
+   - Add notification jobs to the BullMQ queue using either:
+     - Direct BullMQ queue integration in your application
+     - The REST API to add jobs to the queue
+   - Specify target users to receive the notification
 
 5. **Process Notifications**
-   - SkyBell automatically processes notifications through BullMQ workers
+   - The BullMQ worker automatically processes notification jobs
    - Online users receive WebSocket notifications in real-time
-   - Offline users receive push notifications via FCM (if configured)
+   - Offline users receive push notifications via FCM (if registered)
+   - All delivery logic is handled by the BullMQ worker
 
 6. **Monitor and Scale**
    - Use the logs to monitor notification delivery
@@ -551,31 +559,30 @@ SkyBell uses BullMQ for reliable background processing of notifications. Here's 
 
 ### Queue Structure
 
-- **Queue Name**: `notifications`
+- **Queue Name**: `notification_queue`
 - **Job Types**:
   - `notification-job`: Delivers notifications to users
-  - `fcm-job`: Sends push notifications via Firebase
 
 ### Job Processing Workflow
 
 1. **Job Creation**
-   - Jobs are added to the queue with appropriate metadata
-   - Priority can be set (1-5, where 1 is highest priority)
+   - Jobs are added to the queue with required metadata (clientId, users, payload)
+   - Priority can be set (where lower numbers indicate higher priority)
    - Optional delay for scheduled notifications
 
 2. **Worker Processing**
    - `NotificationProcessor` picks up jobs from the queue
-   - Workers validate and prepare notifications for delivery
-   - Workers maintain connection to Redis to track online status
+   - Workers validate the job data and prepare notifications for delivery
+   - Workers use Redis to track user online/offline status
 
 3. **Delivery Logic**
-   - Online users: WebSocket delivery attempted first
-   - Offline users with FCM tokens: Push notification sent
-   - All notifications: Optional persistence to database
+   - For online users: WebSocket delivery via Socket.IO
+   - For offline users with FCM tokens: Push notification via Firebase Cloud Messaging
+   - All delivery is handled by the BullMQ worker, not directly by client applications
 
 4. **Retry Mechanism**
    - Failed jobs are automatically retried with exponential backoff
-   - Maximum retry count configurable (default: 3)
+   - Maximum retry count is configurable
    - Dead-letter queue for persistent failures
 
 ### Example BullMQ Job
@@ -607,13 +614,13 @@ The system provides endpoints to monitor job status:
 
 ```bash
 # Get all active jobs
-curl http://localhost:3000/api/v1/queues/notifications/jobs/active
+curl http://localhost:3000/api/v1/queues/notification_queue/jobs/active
 
 # Get failed jobs
-curl http://localhost:3000/api/v1/queues/notifications/jobs/failed
+curl http://localhost:3000/api/v1/queues/notification_queue/jobs/failed
 
 # Get job counts
-curl http://localhost:3000/api/v1/queues/notifications/counts
+curl http://localhost:3000/api/v1/queues/notification_queue/counts
 ```
 
 ## How to Host the SkyBell Logo for the README
