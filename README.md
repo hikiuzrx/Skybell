@@ -660,24 +660,3 @@ curl http://localhost:3000/api/v1/queues/notification_queue/jobs/failed
 # Get job counts
 curl http://localhost:3000/api/v1/queues/notification_queue/counts
 ```
-
-## How to Host the SkyBell Logo for the README
-
-Follow these steps to host the SkyBell logo on GitHub without adding it to your repository:
-
-1. Go to your GitHub repository
-2. Click on the "Issues" tab
-3. Create a new issue (you can title it "Logo Hosting")
-4. Drag and drop the SkyBell logo image into the issue description
-5. GitHub will upload it and provide a URL like: `https://user-images.githubusercontent.com/YOUR_USER_ID/assets/ASSET_ID/SkyBell2.png`
-6. Copy this URL and update the image reference at the top of the README.md
-
-```markdown
-<p align="center">
-  <img src="PASTE_YOUR_GITHUB_IMAGE_URL_HERE" alt="SkyBell Logo" width="400" />
-</p>
-```
-
-After updating the URL, commit the changes to your README.md. You can optionally close the issue (the image will remain hosted).
-
-This approach allows the logo to be displayed properly on GitHub without storing it in the repository.
