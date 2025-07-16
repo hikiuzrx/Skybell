@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: skybell/notification-service
+    container_name: skybell-notification-service
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - GRPC_PORT=50051
+      - MONGODB_URI=mongodb://mongo:27017/skybell
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "3000:3000"
+      - "50051:50051"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - skybell-network
+    depends_on:
+      - mongo
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  mongo:
+    image: mongo:6
+    container_name: skybell-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - skybell-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: skybell-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - skybell-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+      
+  test-client:
+    build:
+      context: ../notification-test-client-vite
+      dockerfile: Dockerfile
+    image: skybell/notification-test-client
+    container_name: skybell-test-client
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://notification-service:3000
+    ports:
+      - "5173:5173"
+    networks:
+      - skybell-network
+    depends_on:
+      - notification-service
+
+networks:
+  skybell-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  redis-data:
