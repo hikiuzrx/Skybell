@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="assets/SkyBell2.png" alt="SkyBell Logo" width="400" />
+  <!-- Image will only show locally, not on GitHub since assets/ is git-ignored -->
+  <img src="assets/SkyBell2.png" alt="SkyBell Logo" width="400" onerror="this.style.display='none'" />
 </p>
 
 <p align="center">
+  <h1 align="center">SkyBell</h1>
   <strong>Plug-and-Play Notification Service</strong>
 </p>
 
@@ -616,4 +618,6 @@ curl http://localhost:3000/api/v1/queues/notifications/jobs/failed
 curl http://localhost:3000/api/v1/queues/notifications/counts
 ```
 
-> **Note:** The SkyBell2.png logo file should be placed in the `assets` directory. This directory is excluded from Git tracking to avoid copyright issues. You'll need to manually add the logo image after cloning the repository.
+> **Note for Repository Users:** The SkyBell logo is stored locally in the `assets/SkyBell2.png` file, which is excluded from Git tracking. 
+> - When viewing the README locally, the logo will display properly if you've added the image to your local `assets` directory.
+> - When viewing on GitHub, only the text header "SkyBell" will be displayed.
