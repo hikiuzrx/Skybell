@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/user/skybell-notification/main/assets/skybell-logo.png" alt="SkyBell Logo" width="400" />
+  <img src="SkyBell2.png" alt="SkyBell Logo" width="400" />
 </p>
 
 <p align="center">
@@ -10,23 +10,31 @@
   <img src="https://nestjs.com/img/logo-small.svg" alt="NestJS" height="40" />
   <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Typescript_logo_2020.svg" alt="TypeScript" height="40" />
   <img src="https://grpc.io/img/logos/grpc-logo.png" alt="gRPC" height="40" />
-  <img src="https://redis.io/images/logos/redis-icon-full-color.svg" alt="Redis" height="40" />
+  <img src="https://thumbnail.imgbin.com/0/16/6/redis-logo-BtwnDdhb_t.jpg" alt="Redis" height="40" />
 </p>
 
 # SkyBell Notification Service
 
-A scalable microservice for real-time notifications using NestJS, Socket.IO, gRPC, and Redis.
+A plug-and-play, scalable microservice for real-time notifications using NestJS, Socket.IO, gRPC, and Redis. SkyBell provides a complete solution for delivering notifications across web and mobile platforms with support for WebSockets, push notifications, and background processing.
 
-## Features
+## Key Features
 
-- WebSocket server for real-time client communication
-- Dynamic namespaces for client segregation
-- JWT-based authentication
-- gRPC services for client registration
-- FCM integration for push notifications
-- Redis for distributed connection management
-- MongoDB for client storage
-- BullMQ for background job processing
+- **Plug-and-Play Integration**: Simple client registration and connection process
+- **Multi-Channel Delivery**: WebSockets for real-time + FCM for push notifications
+- **Dynamic Client Namespaces**: Secure separation between different applications
+- **JWT-based Authentication**: Secure your notification channels with minimal effort
+- **Multiple APIs**:
+  - REST API for standard HTTP integration
+  - gRPC services for high-performance systems
+  - Socket.IO for real-time bidirectional communication
+- **Scalable Infrastructure**:
+  - Redis for distributed connection management and pub/sub
+  - MongoDB for persistent storage of clients and settings
+  - BullMQ for reliable background job processing and retries
+- **Developer-Friendly**:
+  - Detailed logging and monitoring
+  - Swagger documentation
+  - Docker deployment support
 
 ## Project Structure
 
@@ -465,231 +473,41 @@ Authentication parameters should be provided in either the `auth` or `query` obj
 }
 ```
 
-## Workflow for Integrating with the Notification Service
+## Complete Integration Workflow
 
-The notification service uses a hybrid approach for client integration. Follow these steps to integrate your application:
+For new developers looking to integrate with SkyBell, here's the complete step-by-step workflow:
 
-### 1. Client Registration
+1. **Register Your Application**
+   - Use either the REST API or gRPC service to register your application
+   - Store the returned `clientId` and keep your `clientSecret` secure
+   - This step only needs to be done once per application
 
-First, register your client application using either the REST API or gRPC service:
+2. **Set Up Your Client**
+   - Implement the JWT token generation using your `clientSecret`
+   - Set up Socket.IO client with proper namespace format: `/client-{clientId}`
+   - Include authentication parameters in connection request
 
-#### Using REST API
+3. **Connect Users**
+   - When users log into your application, generate a JWT token for them
+   - Connect to the WebSocket server with the token and optional FCM token
+   - Handle connection events and notification reception
 
-```bash
-curl -X POST http://localhost:3000/api/v1/clients \
-  -H "Content-Type: application/json" \
-  -d '{
-    "appName": "Your App Name",
-    "clientSecret": "your-secret-key-at-least-8-chars",
-    "clientUrl": "https://your-app-domain.com",
-    "description": "Description of your application",
-    "cookieName": "your_auth_cookie_name"
-  }'
-```
+4. **Send Notifications**
+   - For real-time communication: Use direct WebSocket events
+   - For background processing: Use the REST API or BullMQ queue
+   - Specify target users or socket IDs to receive the notification
 
-#### Using gRPC
+5. **Process Notifications**
+   - SkyBell automatically processes notifications through BullMQ workers
+   - Online users receive WebSocket notifications in real-time
+   - Offline users receive push notifications via FCM (if configured)
 
-```javascript
-// Example with grpc-js
-const client = new ClientRegistrationServiceClient('localhost:50051');
-client.RegisterClient({
-  appName: "Your App Name",
-  clientSecret: "your-secret-key-at-least-8-chars",
-  clientUrl: "https://your-app-domain.com",
-  description: "Description of your application",
-  cookieName: "your_auth_cookie_name"
-}, (err, response) => {
-  console.log('Client ID:', response.id);
-});
-```
+6. **Monitor and Scale**
+   - Use the logs to monitor notification delivery
+   - Scale the service horizontally for high-volume applications
+   - Add additional Redis nodes for distributed deployments
 
-The server will return a unique `clientId` that you'll use for all subsequent operations.
-
-### 2. WebSocket Connection
-
-After registration, clients can connect to the WebSocket server:
-
-```javascript
-const socket = io(`http://your-server:3000/client-${clientId}`, {
-  path: '/socket.io',
-  transports: ['websocket', 'polling'],
-  auth: {
-    clientId: 'your-client-id',
-    token: 'your-jwt-token-signed-with-client-secret',
-    fcmToken: 'optional-fcm-token-for-push-notifications'
-  }
-});
-```
-
-#### JWT Token Generation
-
-```javascript
-// Using jsonwebtoken library
-const jwt = require('jsonwebtoken');
-
-const token = jwt.sign({
-  sub: 'user-id',
-  userId: 'user-id',
-  clientId: 'your-client-id'
-}, 'your-client-secret', {
-  expiresIn: '24h'
-});
-```
-
-### 3. Sending Notification Jobs
-
-You can send notifications using three methods:
-
-#### A. Direct WebSocket Event (Real-time)
-
-```javascript
-socket.emit('notification-job', {
-  payload: {
-    title: 'Notification Title',
-    body: 'Notification Body',
-    data: { customField: 'value' }
-  },
-  sockets: ['target-socket-id-1', 'target-socket-id-2']  // Optional: specific sockets
-});
-```
-
-#### B. REST API (Background Processing via BullMQ)
-
-```bash
-curl -X POST http://localhost:3000/api/v1/notifications \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-admin-token" \
-  -d '{
-    "clientId": "your-client-id",
-    "users": ["user1", "user2"],
-    "payload": {
-      "title": "Notification Title",
-      "body": "Notification Body",
-      "actionUrl": "https://example.com/action",
-      "imageUrl": "https://example.com/image.jpg",
-      "data": { "customField": "value" }
-    }
-  }'
-```
-
-#### C. Programmatic Queue (Node.js Client)
-
-```javascript
-// Using bullmq
-const { Queue } = require('bullmq');
-
-const notificationQueue = new Queue('notifications', {
-  connection: {
-    host: 'your-redis-host',
-    port: 6379
-  }
-});
-
-await notificationQueue.add('notification-job', {
-  clientId: 'your-client-id',
-  users: ['user1', 'user2'],
-  payload: {
-    title: 'Notification Title',
-    body: 'Notification Body',
-    actionUrl: 'https://example.com/action',
-    imageUrl: 'https://example.com/image.jpg',
-    data: { customField: 'value' }
-  }
-});
-```
-
-### 4. Processing Flow
-
-Here's what happens when you submit a notification job:
-
-1. **Job Queuing**: The job is added to the BullMQ queue
-2. **Worker Processing**: The notification processor picks up the job
-3. **User Resolution**: The system looks up connected sockets for the targeted users
-4. **Delivery Methods**:
-   - **WebSocket**: Sends real-time notifications to connected clients
-   - **FCM (Firebase Cloud Messaging)**: Sends push notifications to registered devices
-   - **Fallback Storage**: Stores notifications for offline users in Redis
-
-### 5. Receiving Notifications
-
-Clients receive notifications through the WebSocket connection:
-
-```javascript
-socket.on('notification', (data) => {
-  console.log('Received notification:', data);
-  // Handle the notification in your UI
-});
-```
-
-### 6. FCM Token Registration (Optional)
-
-For push notifications to mobile devices or browsers, register FCM tokens:
-
-#### Using gRPC Service
-
-```javascript
-client.RegisterFCMToken({
-  userId: 'user-id',
-  clientId: 'your-client-id',
-  fcmToken: 'fcm-token-from-firebase'
-}, (err, response) => {
-  console.log('FCM token registered:', response.success);
-});
-```
-
-#### Using WebSocket Connection
-
-Simply include the FCM token in your connection parameters:
-
-```javascript
-const socket = io(`http://your-server:3000/client-${clientId}`, {
-  auth: {
-    clientId: 'your-client-id',
-    token: 'your-jwt-token',
-    fcmToken: 'fcm-token-from-firebase'
-  }
-});
-```
-
-### 7. Testing WebSocket Connections
-
-You can test your WebSocket connection using various tools:
-
-#### Using the Test Client
-
-The repository includes a test client (`notification-test-client-vite`) that demonstrates how to connect to the WebSocket server and handle events.
-
-#### Using Postman
-
-Postman supports WebSocket testing:
-
-1. Create a new WebSocket request
-2. Use the URL: `ws://localhost:3000/client-YOUR_CLIENT_ID?EIO=4&transport=websocket&clientId=YOUR_CLIENT_ID&token=YOUR_JWT_TOKEN`
-3. Send and receive messages
-
-#### Using Command-Line Tools
-
-You can use `wscat` to test WebSocket connections:
-
-```bash
-# Install wscat
-npm install -g wscat
-
-# Connect to the WebSocket server
-wscat -c "ws://localhost:3000/client-YOUR_CLIENT_ID?EIO=4&transport=websocket&clientId=YOUR_CLIENT_ID&token=YOUR_JWT_TOKEN"
-
-# Send a test message
-> {"event":"notification-job","data":{"payload":{"message":"Test"},"sockets":[]}}
-```
-
-#### Using the Test Script
-
-The repository includes a test script (`test-socket.js`) that demonstrates how to connect and test the WebSocket server:
-
-```bash
-# Run the test script
-node test-socket.js
-```
+This workflow allows you to quickly implement a robust notification system without building all the infrastructure yourself. SkyBell handles the complex parts like connection management, push notifications, and message queuing.
 
 ## Development
 
@@ -708,6 +526,24 @@ yarn test:cov
 ```
 
 ## Docker Deployment
+
+SkyBell is fully containerized and ready for deployment with Docker:
+
+### Using Docker Directly
+
+```bash
+# Build the Docker image
+docker build -t skybell-notification-service .
+
+# Run the container
+docker run -p 3000:3000 -p 50051:50051 --name skybell \
+  -v $(pwd)/logs:/app/logs \
+  -e MONGODB_URI=mongodb://mongodb:27017/skybell \
+  -e REDIS_HOST=redis \
+  skybell-notification-service
+```
+
+### Using Docker Compose
 
 You can deploy the entire stack using Docker Compose:
 
@@ -750,4 +586,75 @@ You can view logs in real-time with:
 
 ```bash
 tail -f logs/app.log
+```
+
+## BullMQ Processing Details
+
+SkyBell uses BullMQ for reliable background processing of notifications. Here's how the queue system works:
+
+### Queue Structure
+
+- **Queue Name**: `notifications`
+- **Job Types**:
+  - `notification-job`: Delivers notifications to users
+  - `fcm-job`: Sends push notifications via Firebase
+
+### Job Processing Workflow
+
+1. **Job Creation**
+   - Jobs are added to the queue with appropriate metadata
+   - Priority can be set (1-5, where 1 is highest priority)
+   - Optional delay for scheduled notifications
+
+2. **Worker Processing**
+   - `NotificationProcessor` picks up jobs from the queue
+   - Workers validate and prepare notifications for delivery
+   - Workers maintain connection to Redis to track online status
+
+3. **Delivery Logic**
+   - Online users: WebSocket delivery attempted first
+   - Offline users with FCM tokens: Push notification sent
+   - All notifications: Optional persistence to database
+
+4. **Retry Mechanism**
+   - Failed jobs are automatically retried with exponential backoff
+   - Maximum retry count configurable (default: 3)
+   - Dead-letter queue for persistent failures
+
+### Example BullMQ Job
+
+```javascript
+// Job structure
+{
+  name: 'notification-job',
+  data: {
+    clientId: '6876dab283777a5d40cdc088',
+    payload: {
+      title: 'New Message',
+      body: 'You have a new message from John',
+      data: { messageId: '123', senderId: '456' }
+    },
+    users: ['user-123', 'user-456'],
+    options: {
+      priority: 2,
+      attempts: 3,
+      removeOnComplete: true
+    }
+  }
+}
+```
+
+### Monitoring Jobs
+
+The system provides endpoints to monitor job status:
+
+```bash
+# Get all active jobs
+curl http://localhost:3000/api/v1/queues/notifications/jobs/active
+
+# Get failed jobs
+curl http://localhost:3000/api/v1/queues/notifications/jobs/failed
+
+# Get job counts
+curl http://localhost:3000/api/v1/queues/notifications/counts
 ```
