@@ -1,40 +1,22 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ClientService } from "./client.service";
+import { ClientRestController } from "./client.controller";
 import { ClientGrpcService } from "./client.grpc";
 import { LoggerModule } from "../../infrsatructure/logger/logger.module";
 import RedisModule from "../../infrsatructure/redis/redis.module";
 import { Client, ClientSchema } from "./dto/schema/client.schema";
-import { 
-  ClientRegistrationValidationPipe,
-  FcmTokenRequestValidationPipe,
-  FcmTokenValidationPipe,
-  UrlValidationPipe
-} from "./pipes";
+import { SocketModule } from "../../infrsatructure/socket/socket.module";
 
 @Module({
     imports: [
         LoggerModule,
         RedisModule,
+        forwardRef(() => SocketModule), // Use forwardRef to avoid circular dependency
         MongooseModule.forFeature([{ name: Client.name, schema: ClientSchema }])
     ],
-    providers: [
-        ClientService, 
-        ClientGrpcService,
-        // Register pipes as providers
-        ClientRegistrationValidationPipe,
-        FcmTokenRequestValidationPipe,
-        FcmTokenValidationPipe,
-        UrlValidationPipe
-    ],
-    exports: [
-        ClientService, 
-        ClientGrpcService,
-        // Export pipes for use in other modules
-        ClientRegistrationValidationPipe,
-        FcmTokenRequestValidationPipe,
-        FcmTokenValidationPipe,
-        UrlValidationPipe
-    ],
+    controllers: [ClientRestController, ClientGrpcService],
+    providers: [ClientService],
+    exports: [ClientService],
 })
 export class ClientModule {}

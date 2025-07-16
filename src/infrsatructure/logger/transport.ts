@@ -4,10 +4,10 @@ const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.printf(({ timestamp, level, message, context, trace }) => {
-    const contextStr = context ? `[${context}]` : '';
+    const contextStr = context ? `[${context}]`.padEnd(13) : '[App]'.padEnd(13);
     const traceStr = trace ? `\n${trace}` : '';
     
-    // Add emoji based on level
+    // Add emoji based on level with consistent spacing
     const levelEmoji = {
       error: '❌',
       warn: '⚠️ ',
@@ -16,7 +16,9 @@ const customFormat = winston.format.combine(
       verbose: '📝'
     }[level] || 'ℹ️ ';
     
-    return `${timestamp} ${levelEmoji} ${level.toUpperCase().padEnd(7)} ${contextStr} ${message}${traceStr}`;
+    const levelStr = level.toUpperCase().padEnd(8);
+    
+    return `${timestamp} ${levelEmoji} ${levelStr} ${contextStr} ${message}${traceStr}`;
   })
 );
 

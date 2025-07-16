@@ -25,21 +25,24 @@ export class ClientService {
     async validateToken(cookies: Record<string, string | undefined>, clientId: string, token?: string): Promise<any> {
         try {
             let t: string | undefined;
-            const client: Client | null = await this.ClientModel.findById(clientId)
-        if(!client){
-            throw new UnauthorizedException("client doesn't exist")
-        }
-        if(token){
-             t = token;
-        } else {
-             t = cookies[client.cookieName || "auth_token"]; 
-            if(!t){
-                throw new UnauthorizedException("No authentication token provided");
+            const client: Client | null = await this.ClientModel.findById(clientId);
+            
+            if(!client){
+              throw new UnauthorizedException("client doesn't exist");
             }
-        }
-      return jwt.verify(t,client.clientSecret);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
+            
+            if(token){
+              t = token;
+            } else {
+              t = cookies[client.cookieName || "auth_token"]; 
+              if(!t){
+                throw new UnauthorizedException("No authentication token provided");
+              }
+            }
+            
+            return jwt.verify(t, client.clientSecret);
+          } catch (error) {
+            throw new UnauthorizedException('Invalid token');
+          }
     }
-  }
 }

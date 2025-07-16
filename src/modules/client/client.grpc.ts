@@ -1,14 +1,10 @@
-import { Controller, UsePipes } from "@nestjs/common";
+import { Controller } from "@nestjs/common";
 import { GrpcMethod } from "@nestjs/microservices";
 import { RedisService } from "../../infrsatructure/redis/redis.service";
 import { ClientService } from "./client.service";
 import { LoggerService } from "../../infrsatructure/logger/logger.service";
 import { RegisterClientDto } from "./dto/client.dto";
-import type { RegisterClientRequest, RegisterClientResponse } from "../../types/client.type";
-import { ClientRegistrationValidationPipe } from "./pipes/client-registration-validation.pipe";
-import { FcmTokenRequestValidationPipe } from "./pipes/fcm-token-request-validation.pipe";
-
-
+import type { RegisterClientRequest,RegisterClientResponse } from "./../../types/client.type";
 @Controller()
 export class ClientGrpcService {
   constructor(
@@ -18,8 +14,9 @@ export class ClientGrpcService {
   ) {}
 
   @GrpcMethod('ClientRegistrationService', 'RegisterClient')
-  @UsePipes(ClientRegistrationValidationPipe)
   async registerClient(data: RegisterClientRequest): Promise<RegisterClientResponse> {
+    this.logger.log(`🔌 GRPC RegisterClient called with data: ${JSON.stringify(data)}`, 'GRPC');
+    
     try {
       const registerDto: RegisterClientDto = {
         appName: data.appName,
@@ -71,8 +68,9 @@ export class ClientGrpcService {
   }
 
   @GrpcMethod('NotificationService', 'RegisterFCMToken')
-  @UsePipes(FcmTokenRequestValidationPipe)
   async registerFCMToken(data: { userId: string; clientId: string; fcmToken: string }): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`🔌 GRPC RegisterFCMToken called with data: ${JSON.stringify(data)}`, 'GRPC');
+    
     try {
       await this.redisService.storeFCMToken(data.clientId, data.userId, data.fcmToken);
 

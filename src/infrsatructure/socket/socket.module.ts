@@ -1,28 +1,13 @@
-import { Module,Global } from '@nestjs/common';
-import type { OnModuleInit } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthenticatedSocketAdapter } from './socket.adapter';
-import { ClientService } from '../../modules/client/client.service';
-import { LoggerService } from '../logger/logger.service';
+import { SocketGateway } from './socket.gateway';
 import RedisModule from '../redis/redis.module';
-import {ClientModule }from '../../modules/client/client.module';
 import { LoggerModule } from '../logger/logger.module';
-@Global() // Make this module available globally
-@Module({
-    imports: [RedisModule, ClientModule,LoggerModule],
-  providers: [AuthenticatedSocketAdapter],
-  exports: [AuthenticatedSocketAdapter],
-})
-export class SocketModule implements OnModuleInit {
-  constructor(
-    private readonly adapter: AuthenticatedSocketAdapter,
-    private readonly clientService: ClientService,
-    private readonly logger: LoggerService
-  ) {}
+import { ClientModule } from '../../modules/client/client.module';
 
-  async onModuleInit() {
-    const clients = await this.clientService.getActiveClients();
-    const origins = clients.map(c => c.clientUrl);
-    this.adapter.setAllowedOrigins(origins);
-    this.logger.socket(`Loaded ${origins.length} CORS origins for sockets`);
-  }
-}
+@Module({
+  imports: [RedisModule, LoggerModule, forwardRef(() => ClientModule)],
+  providers: [AuthenticatedSocketAdapter, SocketGateway],
+  exports: [AuthenticatedSocketAdapter, SocketGateway],
+})
+export class SocketModule {}

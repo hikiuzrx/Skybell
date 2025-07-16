@@ -1,4 +1,5 @@
-import { Injectable} from '@nestjs/common';
+ 
+ import { Injectable} from '@nestjs/common';
 import type {  LoggerService as NestLoggerService  } from '@nestjs/common';
 import winston from 'winston';
 import { consoleTransport, fileTransport, errorFileTransport } from './transport';
@@ -30,7 +31,9 @@ export class LoggerService implements NestLoggerService {
   }
 
   debug(message: string, context?: string) {
-    this.logger.debug(message, { context: context || 'App' });
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.debug(message, { context: context || 'App' });
+    }
   }
 
   verbose(message: string, context?: string) {
@@ -69,5 +72,13 @@ export class LoggerService implements NestLoggerService {
   api(message: string, method?: string, endpoint?: string) {
     const details = method && endpoint ? `${method} ${endpoint}` : '';
     this.logger.info(`🌐 ${message} ${details}`, { context: 'API' });
+  }
+
+  grpc(message: string) {
+    this.logger.info(`🔌 ${message}`, { context: 'GRPC' });
+  }
+
+  notification(message: string) {
+    this.logger.info(`🔔 ${message}`, { context: 'Notification' });
   }
 }

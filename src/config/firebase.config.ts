@@ -1,12 +1,19 @@
 import admin from 'firebase-admin';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import winston from 'winston';
 
-// Get current directory in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Basic logger for config initialization
+const configLogger = winston.createLogger({
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ]
+});
 
 // Check if Firebase is already initialized
 if (!admin.apps.length) {
@@ -19,9 +26,9 @@ if (!admin.apps.length) {
       credential: admin.credential.cert(serviceAccount),
     });
     
-    console.log('🔥 Firebase Admin initialized successfully');
+    configLogger.info('🔥 Firebase Admin initialized successfully');
   } catch (error) {
-    console.error('❌ Firebase initialization failed:', error);
+    configLogger.error('❌ Firebase initialization failed: ' + (error as Error).message);
     throw error;
   }
 }
