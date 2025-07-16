@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="SkyBell2.png" alt="SkyBell Logo" width="400" />
+  <img src="assets/SkyBell2.png" alt="SkyBell Logo" width="400" />
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
   <img src="https://nestjs.com/img/logo-small.svg" alt="NestJS" height="40" />
   <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Typescript_logo_2020.svg" alt="TypeScript" height="40" />
   <img src="https://grpc.io/img/logos/grpc-logo.png" alt="gRPC" height="40" />
-  <img src="https://thumbnail.imgbin.com/0/16/6/redis-logo-BtwnDdhb_t.jpg" alt="Redis" height="40" />
+  <img src="https://1000logos.net/wp-content/uploads/2020/08/Redis-Logo-500x313.jpg" alt="Redis" height="40" />
 </p>
 
 # SkyBell Notification Service
@@ -38,79 +38,36 @@ A plug-and-play, scalable microservice for real-time notifications using NestJS,
 
 ## Project Structure
 
-```
+```bash
 notification-service/
 ├── bun.lock
 ├── Dockerfile
+├── docker-compose.yml
 ├── index.ts
-├── logs
-│   ├── app.log
-│   └── error.log
+├── logs/
 ├── nest-cli.json
 ├── package.json
-├── proto
-│   └── client-registration.proto
+├── proto/
 ├── README.md
 ├── sky-bell-firebase.json
-├── src
+├── src/
 │   ├── app.controller.ts
 │   ├── app.module.ts
 │   ├── app.service.ts
-│   ├── config
-│   │   ├── bullMq.config.ts
-│   │   ├── firebase.config.ts
-│   │   ├── redis.config.ts
-│   │   └── socket.config.ts
-│   ├── generated
-│   │   └── proto
-│   │       ├── client-registration_grpc_pb.d.ts
-│   │       ├── client-registration_grpc_pb.js
-│   │       ├── client-registration_pb.d.ts
-│   │       └── client-registration_pb.js
-│   ├── infrsatructure
-│   │   ├── database
-│   │   │   ├── database.module.ts
-│   │   │   └── database.provider.ts
-│   │   ├── logger
-│   │   │   ├── logger.interceptor.ts
-│   │   │   ├── logger.module.ts
-│   │   │   ├── logger.service.ts
-│   │   │   └── transport.ts
-│   │   ├── push
-│   │   │   ├── push.module.ts
-│   │   │   └── push.service.ts
-│   │   ├── queue
-│   │   │   ├── bullMq.module.ts
-│   │   │   └── notification.processor.ts
-│   │   ├── redis
-│   │   │   ├── redis.module.ts
-│   │   │   └── redis.service.ts
-│   │   └── socket
-│   │       ├── socket.adapter.ts
-│   │       ├── socket.gateway.ts
-│   │       └── socket.module.ts
+│   ├── config/
+│   ├── generated/
+│   ├── infrsatructure/
+│   │   ├── database/
+│   │   ├── logger/
+│   │   ├── push/
+│   │   ├── queue/
+│   │   ├── redis/
+│   │   └── socket/
 │   ├── main.ts
-│   ├── modules
-│   │   └── client
-│   │       ├── client.controller.ts
-│   │       ├── client.grpc.ts
-│   │       ├── client.module.ts
-│   │       ├── client.service.ts
-│   │       ├── dto
-│   │       │   ├── client.dto.ts
-│   │       │   └── schema
-│   │       │       └── client.schema.ts
-│   │       └── pipes
-│   │           ├── client-registration-validation.pipe.ts
-│   │           ├── fcm-token-request-validation.pipe.ts
-│   │           ├── fcm-token-validation.pipe.ts
-│   │           ├── index.ts
-│   │           └── url-validation.pipe.ts
-│   ├── shared
-│   │   └── constants.ts
-│   └── types
-│       ├── client.type.ts
-│       └── notification-job.type.ts
+│   ├── modules/
+│   │   └── client/
+│   ├── shared/
+│   └── types/
 ├── tsconfig.json
 └── yarn.lock
 ```
@@ -146,7 +103,7 @@ yarn start:prod
 
 Create a `.env` file in the root directory with the following variables:
 
-```
+```env
 # Server
 PORT=3000
 GRPC_PORT=50051
@@ -185,7 +142,7 @@ curl -X POST http://localhost:3000/api/v1/clients \
     "cookieName": "your_auth_cookie_name",
     "isActive": true
   }'
-```
+```bash
 
 The response will include a unique `clientId` that you'll use in all subsequent interactions:
 
@@ -435,7 +392,7 @@ When a notification is sent, the service follows this workflow:
 
 After starting the server, access the Swagger documentation at:
 
-```
+```plaintext
 http://localhost:3000/api/docs
 ```
 
@@ -457,7 +414,7 @@ The service provides the following gRPC endpoints:
 
 Clients should connect to a namespace with the following format:
 
-```
+```plaintext
 /client-{clientId}
 ```
 
@@ -658,3 +615,5 @@ curl http://localhost:3000/api/v1/queues/notifications/jobs/failed
 # Get job counts
 curl http://localhost:3000/api/v1/queues/notifications/counts
 ```
+
+> **Note:** The SkyBell2.png logo file should be placed in the `assets` directory. This directory is excluded from Git tracking to avoid copyright issues. You'll need to manually add the logo image after cloning the repository.
