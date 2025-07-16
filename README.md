@@ -40,37 +40,75 @@ A plug-and-play, scalable microservice for real-time notifications using NestJS,
 ## Project Structure
 
 ```bash
-notification-service/
 ├── bun.lock
-├── Dockerfile
 ├── docker-compose.yml
+├── Dockerfile
 ├── index.ts
-├── logs/
+├── logs
+│   ├── app.log
+│   └── error.log
 ├── nest-cli.json
 ├── package.json
-├── proto/
+├── proto
+│   └── client-registration.proto
 ├── README.md
 ├── sky-bell-firebase.json
-├── src/
-│   ├── app.controller.ts
-│   ├── app.module.ts
-│   ├── app.service.ts
-│   ├── config/
-│   ├── generated/
-│   ├── infrsatructure/
-│   │   ├── database/
-│   │   ├── logger/
-│   │   ├── push/
-│   │   ├── queue/
-│   │   ├── redis/
-│   │   └── socket/
-│   ├── main.ts
-│   ├── modules/
-│   │   └── client/
-│   ├── shared/
-│   └── types/
+├── src
+│   ├── app.controller.ts
+│   ├── app.module.ts
+│   ├── app.service.ts
+│   ├── config
+│   │   ├── bullMq.config.ts
+│   │   ├── firebase.config.ts
+│   │   ├── redis.config.ts
+│   │   └── socket.config.ts
+│   ├── infrsatructure
+│   │   ├── database
+│   │   │   ├── database.module.ts
+│   │   │   └── database.provider.ts
+│   │   ├── logger
+│   │   │   ├── logger.interceptor.ts
+│   │   │   ├── logger.module.ts
+│   │   │   ├── logger.service.ts
+│   │   │   └── transport.ts
+│   │   ├── push
+│   │   │   ├── push.module.ts
+│   │   │   └── push.service.ts
+│   │   ├── queue
+│   │   │   ├── bullMq.module.ts
+│   │   │   └── notification.processor.ts
+│   │   ├── redis
+│   │   │   ├── redis.module.ts
+│   │   │   └── redis.service.ts
+│   │   └── socket
+│   │       ├── socket.adapter.ts
+│   │       ├── socket.gateway.ts
+│   │       └── socket.module.ts
+│   ├── main.ts
+│   ├── modules
+│   │   └── client
+│   │       ├── client.controller.ts
+│   │       ├── client.grpc.ts
+│   │       ├── client.module.ts
+│   │       ├── client.service.ts
+│   │       ├── dto
+│   │       │   ├── client.dto.ts
+│   │       │   └── schema
+│   │       │       └── client.schema.ts
+│   │       └── pipes
+│   │           ├── client-registration-validation.pipe.ts
+│   │           ├── fcm-token-request-validation.pipe.ts
+│   │           ├── fcm-token-validation.pipe.ts
+│   │           ├── index.ts
+│   │           └── url-validation.pipe.ts
+│   ├── shared
+│   │   └── constants.ts
+│   └── types
+│       ├── client.type.ts
+│       └── notification-job.type.ts
 ├── tsconfig.json
 └── yarn.lock
+
 ```
 
 ## Architecture
